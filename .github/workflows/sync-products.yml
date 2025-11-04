@@ -1,0 +1,52 @@
+name: Sync Products (Python)
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "0 7 * * *"  # 07:00 UTC
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Map secrets to env (.env)
+        run: |
+          {
+            echo "SHOPIFY_STORE_DOMAIN=${{ secrets.SHOPIFY_STORE_URL }}";
+            echo "SHOPIFY_ACCESS_TOKEN=${{ secrets.SHOPIFY_ACCESS_TOKEN }}";
+            echo "SHOPIFY_API_VERSION=2025-01";
+            echo "SHOPIFY_LOCATION_ID=${{ secrets.SHOPIFY_LOCATION_ID }}";
+            echo "SUPRIDES_BASE_URL=${{ secrets.SUPRIDES_BASE_URL }}";
+            echo "SUPRIDES_USERNAME=${{ secrets.API_USER }}";
+            echo "SUPRIDES_PASSWORD=${{ secrets.API_PASSWORD }}";
+            echo "SUPRIDES_TOKEN=${{ secrets.API_TOKEN }}";
+            echo "DRY_RUN=true";                    # primeira corrida segura
+            echo "PUBLISH_TO_ONLINE_STORE=false";   # criar em Draft
+            echo "PRICE_SOURCE=pvpr";
+            echo "DEFAULT_VENDOR=Suprides";
+          } >> .env
+
+      - name: Show products list (debug)
+        run: |
+          echo "======= data/productsList.txt ======="
+          sed -n '1,100p' data/productsList.txt || true
+          echo "===================================="
+
+      - name: Run sync
+        env:
+          # exporta as env para o processo Python
+          $(cat .env | xargs)
+        run: python -m app.sync
