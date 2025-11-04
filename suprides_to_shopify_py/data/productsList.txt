@@ -1,4 +1,0 @@
-# Coloca um EAN por linha. Linhas começadas por # são ignoradas.
-4823114015021
-4823114069956
-8435325493091
